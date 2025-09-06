@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แอปบันทึกสุขภาพ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .health-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .food-card { transition: all 0.3s ease; }
+        .food-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .risk-high { background: linear-gradient(135deg, #ff6b6b, #ee5a52); }
+        .risk-medium { background: linear-gradient(135deg, #feca57, #ff9ff3); }
+        .risk-low { background: linear-gradient(135deg, #48cab2, #2dd4bf); }
+        .notification-badge { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="health-gradient text-white p-6 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">แอปบันทึกสุขภาพ</h1>
+                    <p class="text-white text-opacity-80">ดูแลสุขภาพอย่างครบครัน</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <button id="notificationBtn" class="bg-white bg-opacity-20 p-3 rounded-full hover:bg-opacity-30 transition-all">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                        </svg>
+                    </button>
+                    <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center notification-badge">2</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto p-6">
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-xl shadow-sm mb-6 p-2">
+            <div class="flex space-x-2">
+                <button class="tab-btn active flex-1 py-3 px-4 rounded-lg font-medium transition-all" data-tab="food">
+                    🍎 วิเคราะห์อาหาร
+                </button>
+                <button class="tab-btn flex-1 py-3 px-4 rounded-lg font-medium transition-all" data-tab="health">
+                    📊 บันทึกสุขภาพ
+                </button>
+                <button class="tab-btn flex-1 py-3 px-4 rounded-lg font-medium transition-all" data-tab="appointments">
+                    📅 นัดหมายแพทย์
+                </button>
+            </div>
+        </div>
+
+        <!-- Food Analysis Tab -->
+        <div id="foodTab" class="tab-content">
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Food Input -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-blue-100 p-2 rounded-lg mr-3">🔍</span>
+                        วิเคราะห์อาหาร
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ชื่ออาหาร</label>
+                            <input type="text" id="foodName" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น ข้าวผัดกุ้ง">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ปริมาณ (กรัม)</label>
+                            <input type="number" id="foodAmount" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="250" value="250">
+                        </div>
+                        <button id="analyzeFoodBtn" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105">
+                            วิเคราะห์อาหาร
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Results -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-green-100 p-2 rounded-lg mr-3">📈</span>
+                        ผลการวิเคราะห์
+                    </h3>
+                    <div id="analysisResults" class="space-y-4">
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 11H7v8h2v-8zm4-4h-2v12h2V7zm4-4h-2v16h2V3z"/>
+                            </svg>
+                            <p>กรุณาใส่ข้อมูลอาหารเพื่อวิเคราะห์</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Food History -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="bg-orange-100 p-2 rounded-lg mr-3">📝</span>
+                    ประวัติการรับประทาน
+                </h3>
+                <div id="foodHistory" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Food history items will be added here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Records Tab -->
+        <div id="healthTab" class="tab-content hidden">
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Health Input -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-red-100 p-2 rounded-lg mr-3">❤️</span>
+                        บันทึกข้อมูลสุขภาพ
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">น้ำหนัก (กก.)</label>
+                                <input type="number" id="weight" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="65">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ส่วนสูง (ซม.)</label>
+                                <input type="number" id="height" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="170">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ความดันโลหิต</label>
+                                <input type="text" id="bloodPressure" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="120/80">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">อัตราการเต้นหัวใจ</label>
+                                <input type="number" id="heartRate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="72">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ระดับน้ำตาล (mg/dL)</label>
+                            <input type="number" id="bloodSugar" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="100">
+                        </div>
+                        <button id="saveHealthBtn" class="w-full bg-gradient-to-r from-red-500 to-pink-600 text-white py-3 px-6 rounded-lg font-medium hover:from-red-600 hover:to-pink-700 transition-all transform hover:scale-105">
+                            บันทึกข้อมูล
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Health Summary -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-blue-100 p-2 rounded-lg mr-3">📊</span>
+                        สรุปสุขภาพ
+                    </h3>
+                    <div id="healthSummary" class="space-y-4">
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            <p>กรุณาบันทึกข้อมูลสุขภาพ</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health History -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="bg-purple-100 p-2 rounded-lg mr-3">📈</span>
+                    ประวัติสุขภาพ
+                </h3>
+                <div id="healthHistory" class="space-y-4">
+                    <!-- Health history will be added here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Tab -->
+        <div id="appointmentsTab" class="tab-content hidden">
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Add Appointment -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-green-100 p-2 rounded-lg mr-3">➕</span>
+                        เพิ่มนัดหมาย
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ประเภทการตรวจ</label>
+                            <select id="appointmentType" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <option value="">เลือกประเภท</option>
+                                <option value="general">ตรวจสุขภาพทั่วไป</option>
+                                <option value="dental">ตรวจฟัน</option>
+                                <option value="eye">ตรวจตา</option>
+                                <option value="blood">ตรวจเลือด</option>
+                                <option value="specialist">พบแพทย์เฉพาะทาง</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">โรงพยาบาล/คลินิก</label>
+                            <input type="text" id="hospital" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="โรงพยาบาลรามาธิบดี">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
+                                <input type="date" id="appointmentDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">เวลา</label>
+                                <input type="time" id="appointmentTime" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">หมายเหตุ</label>
+                            <textarea id="appointmentNote" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" rows="3" placeholder="เตรียมตัวอย่างไร หรือข้อมูลเพิ่มเติม"></textarea>
+                        </div>
+                        <button id="addAppointmentBtn" class="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-6 rounded-lg font-medium hover:from-green-600 hover:to-teal-700 transition-all transform hover:scale-105">
+                            เพิ่มนัดหมาย
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upcoming Appointments -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="bg-yellow-100 p-2 rounded-lg mr-3">⏰</span>
+                        นัดหมายที่จะมาถึง
+                    </h3>
+                    <div id="upcomingAppointments" class="space-y-4">
+                        <!-- Upcoming appointments will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Appointments -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="bg-indigo-100 p-2 rounded-lg mr-3">📋</span>
+                    นัดหมายทั้งหมด
+                </h3>
+                <div id="allAppointments" class="space-y-4">
+                    <!-- All appointments will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 m-4 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">การแจ้งเตือน</h3>
+                <button id="closeNotificationBtn" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="notificationContent" class="space-y-3">
+                <!-- Notifications will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample food database with nutritional information
+        const foodDatabase = {
+            'ข้าวผัดกุ้ง': { calories: 520, protein: 18, carbs: 65, fat: 20, fiber: 2, sodium: 1200 },
+            'ส้มตำ': { calories: 120, protein: 3, carbs: 25, fat: 2, fiber: 4, sodium: 800 },
+            'ผัดไทย': { calories: 450, protein: 15, carbs: 55, fat: 18, fiber: 3, sodium: 1000 },
+            'แกงเขียวหวาน': { calories: 380, protein: 20, carbs: 15, fat: 28, fiber: 3, sodium: 900 },
+            'ข้าวขาวหมู': { calories: 650, protein: 25, carbs: 70, fat: 28, fiber: 2, sodium: 1100 },
+            'ลาบหมู': { calories: 280, protein: 22, carbs: 8, fat: 18, fiber: 2, sodium: 950 }
+        };
+
+        // App state
+        let currentTab = 'food';
+        let foodHistory = JSON.parse(localStorage.getItem('foodHistory')) || [];
+        let healthHistory = JSON.parse(localStorage.getItem('healthHistory')) || [];
+        let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTabs();
+            loadFoodHistory();
+            loadHealthHistory();
+            loadAppointments();
+            checkUpcomingAppointments();
+            updateNotificationBadge();
+            
+            // Set default date to today
+            document.getElementById('appointmentDate').value = new Date().toISOString().split('T')[0];
+        });
+
+        // Tab functionality
+        function initializeTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.dataset.tab;
+                    
+                    // Update active tab button
+                    tabBtns.forEach(b => b.classList.remove('active', 'bg-blue-500', 'text-white'));
+                    btn.classList.add('active', 'bg-blue-500', 'text-white');
+                    
+                    // Show/hide tab content
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    document.getElementById(tabName + 'Tab').classList.remove('hidden');
+                    
+                    currentTab = tabName;
+                });
+            });
+
+            // Set initial active tab
+            document.querySelector('.tab-btn[data-tab="food"]').classList.add('bg-blue-500', 'text-white');
+        }
+
+        // Food analysis functionality
+        document.getElementById('analyzeFoodBtn').addEventListener('click', function() {
+            const foodName = document.getElementById('foodName').value.trim();
+            const amount = parseInt(document.getElementById('foodAmount').value) || 250;
+            
+            if (!foodName) {
+                alert('กรุณาใส่ชื่ออาหาร');
+                return;
+            }
+
+            analyzeFood(foodName, amount);
+        });
+
+        function analyzeFood(foodName, amount) {
+            const resultsDiv = document.getElementById('analysisResults');
+            
+            // Find food in database (case insensitive)
+            const foodKey = Object.keys(foodDatabase).find(key => 
+                key.toLowerCase().includes(foodName.toLowerCase()) || 
+                foodName.toLowerCase().includes(key.toLowerCase())
+            );
+            
+            let nutrition;
+            if (foodKey) {
+                nutrition = foodDatabase[foodKey];
+            } else {
+                // Generate estimated nutrition for unknown foods
+                nutrition = generateEstimatedNutrition(foodName);
+            }
+
+            // Calculate nutrition based on amount
+            const factor = amount / 250; // Base serving is 250g
+            const calculatedNutrition = {
+                calories: Math.round(nutrition.calories * factor),
+                protein: Math.round(nutrition.protein * factor),
+                carbs: Math.round(nutrition.carbs * factor),
+                fat: Math.round(nutrition.fat * factor),
+                fiber: Math.round(nutrition.fiber * factor),
+                sodium: Math.round(nutrition.sodium * factor)
+            };
+
+            // Analyze health risks
+            const risks = analyzeHealthRisks(calculatedNutrition);
+            
+            // Display results
+            displayAnalysisResults(foodName, amount, calculatedNutrition, risks);
+            
+            // Add to history
+            addToFoodHistory(foodName, amount, calculatedNutrition, risks);
+        }
+
+        function generateEstimatedNutrition(foodName) {
+            // Simple estimation based on food type keywords
+            let baseCalories = 300;
+            let baseProtein = 10;
+            let baseCarbs = 40;
+            let baseFat = 10;
+            let baseFiber = 3;
+            let baseSodium = 600;
+
+            const keywords = foodName.toLowerCase();
+            
+            if (keywords.includes('ข้าว') || keywords.includes('เส้น')) {
+                baseCarbs += 20;
+                baseCalories += 100;
+            }
+            if (keywords.includes('หมู') || keywords.includes('ไก่') || keywords.includes('เนื้อ')) {
+                baseProtein += 15;
+                baseFat += 10;
+                baseCalories += 150;
+            }
+            if (keywords.includes('ผัก') || keywords.includes('สลัด')) {
+                baseCalories -= 100;
+                baseFiber += 5;
+                baseFat -= 5;
+            }
+            if (keywords.includes('ทอด') || keywords.includes('กรอบ')) {
+                baseFat += 15;
+                baseCalories += 200;
+            }
+
+            return {
+                calories: Math.max(50, baseCalories),
+                protein: Math.max(1, baseProtein),
+                carbs: Math.max(5, baseCarbs),
+                fat: Math.max(1, baseFat),
+                fiber: Math.max(1, baseFiber),
+                sodium: Math.max(100, baseSodium)
+            };
+        }
+
+        function analyzeHealthRisks(nutrition) {
+            const risks = [];
+            
+            if (nutrition.calories > 600) {
+                risks.push({ level: 'high', message: 'แคลอรี่สูงมาก อาจทำให้น้ำหนักเพิ่ม' });
+            } else if (nutrition.calories > 400) {
+                risks.push({ level: 'medium', message: 'แคลอรี่ค่อนข้างสูง ควรออกกำลังกาย' });
+            }
+            
+            if (nutrition.sodium > 1000) {
+                risks.push({ level: 'high', message: 'โซเดียมสูงมาก เสี่ยงความดันโลหิตสูง' });
+            } else if (nutrition.sodium > 700) {
+                risks.push({ level: 'medium', message: 'โซเดียมค่อนข้างสูง ควรดื่มน้ำเพิ่ม' });
+            }
+            
+            if (nutrition.fat > 25) {
+                risks.push({ level: 'high', message: 'ไขมันสูงมาก เสี่ยงโรคหัวใจ' });
+            } else if (nutrition.fat > 15) {
+                risks.push({ level: 'medium', message: 'ไขมันค่อนข้างสูง ควรระวัง' });
+            }
+            
+            if (nutrition.fiber < 3) {
+                risks.push({ level: 'medium', message: 'ใยอาหารน้อย ควรเพิ่มผักและผลไม้' });
+            }
+
+            if (risks.length === 0) {
+                risks.push({ level: 'low', message: 'อาหารนี้ค่อนข้างดีต่อสุขภาพ' });
+            }
+
+            return risks;
+        }
+
+        function displayAnalysisResults(foodName, amount, nutrition, risks) {
+            const resultsDiv = document.getElementById('analysisResults');
+            
+            resultsDiv.innerHTML = `
+                <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-semibold text-lg mb-2">${foodName} (${amount} กรัม)</h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-orange-600 font-medium">แคลอรี่</div>
+                            <div class="text-xl font-bold">${nutrition.calories} kcal</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-red-600 font-medium">โปรตีน</div>
+                            <div class="text-xl font-bold">${nutrition.protein} g</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-blue-600 font-medium">คาร์โบไฮเดรต</div>
+                            <div class="text-xl font-bold">${nutrition.carbs} g</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-yellow-600 font-medium">ไขมัน</div>
+                            <div class="text-xl font-bold">${nutrition.fat} g</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <h5 class="font-semibold text-gray-800">การประเมินความเสี่ยง:</h5>
+                    ${risks.map(risk => `
+                        <div class="p-3 rounded-lg ${risk.level === 'high' ? 'risk-high text-white' : risk.level === 'medium' ? 'risk-medium text-white' : 'risk-low text-white'}">
+                            <div class="flex items-center">
+                                <span class="mr-2">${risk.level === 'high' ? '⚠️' : risk.level === 'medium' ? '⚡' : '✅'}</span>
+                                <span class="font-medium">${risk.message}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function addToFoodHistory(foodName, amount, nutrition, risks) {
+            const entry = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString('th-TH'),
+                time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                foodName,
+                amount,
+                nutrition,
+                risks
+            };
+            
+            foodHistory.unshift(entry);
+            if (foodHistory.length > 20) foodHistory.pop(); // Keep only last 20 entries
+            
+            localStorage.setItem('foodHistory', JSON.stringify(foodHistory));
+            loadFoodHistory();
+        }
+
+        function loadFoodHistory() {
+            const historyDiv = document.getElementById('foodHistory');
+            
+            if (foodHistory.length === 0) {
+                historyDiv.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">ยังไม่มีประวัติการรับประทาน</div>';
+                return;
+            }
+            
+            historyDiv.innerHTML = foodHistory.map(entry => `
+                <div class="food-card bg-white border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold text-gray-800">${entry.foodName}</h4>
+                        <span class="text-xs text-gray-500">${entry.date}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-3">
+                        ${entry.amount} กรัม • ${entry.nutrition.calories} แคลอรี่
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex space-x-2">
+                            ${entry.risks.slice(0, 2).map(risk => `
+                                <span class="px-2 py-1 text-xs rounded-full ${
+                                    risk.level === 'high' ? 'bg-red-100 text-red-800' : 
+                                    risk.level === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                    'bg-green-100 text-green-800'
+                                }">
+                                    ${risk.level === 'high' ? 'เสี่ยงสูง' : risk.level === 'medium' ? 'เสี่ยงปานกลาง' : 'ดีต่อสุขภาพ'}
+                                </span>
+                            `).join('')}
+                        </div>
+                        <button onclick="deleteFoodEntry(${entry.id})" class="text-red-500 hover:text-red-700 text-sm">
+                            ลบ
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteFoodEntry(id) {
+            foodHistory = foodHistory.filter(entry => entry.id !== id);
+            localStorage.setItem('foodHistory', JSON.stringify(foodHistory));
+            loadFoodHistory();
+        }
+
+        // Health records functionality
+        document.getElementById('saveHealthBtn').addEventListener('click', function() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const bloodPressure = document.getElementById('bloodPressure').value.trim();
+            const heartRate = parseInt(document.getElementById('heartRate').value);
+            const bloodSugar = parseInt(document.getElementById('bloodSugar').value);
+            
+            if (!weight || !height) {
+                alert('กรุณาใส่น้ำหนักและส่วนสูง');
+                return;
+            }
+            
+            saveHealthRecord(weight, height, bloodPressure, heartRate, bloodSugar);
+        });
+
+        function saveHealthRecord(weight, height, bloodPressure, heartRate, bloodSugar) {
+            const bmi = weight / Math.pow(height / 100, 2);
+            const healthRisks = analyzeHealthData(bmi, bloodPressure, heartRate, bloodSugar);
+            
+            const entry = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString('th-TH'),
+                time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+                weight,
+                height,
+                bmi: Math.round(bmi * 10) / 10,
+                bloodPressure,
+                heartRate,
+                bloodSugar,
+                risks: healthRisks
+            };
+            
+            healthHistory.unshift(entry);
+            if (healthHistory.length > 50) healthHistory.pop();
+            
+            localStorage.setItem('healthHistory', JSON.stringify(healthHistory));
+            loadHealthHistory();
+            displayHealthSummary(entry);
+            
+            // Clear form
+            document.getElementById('weight').value = '';
+            document.getElementById('height').value = '';
+            document.getElementById('bloodPressure').value = '';
+            document.getElementById('heartRate').value = '';
+            document.getElementById('bloodSugar').value = '';
+        }
+
+        function analyzeHealthData(bmi, bloodPressure, heartRate, bloodSugar) {
+            const risks = [];
+            
+            if (bmi < 18.5) {
+                risks.push({ level: 'medium', message: 'น้ำหนักน้อยเกินไป ควรเพิ่มน้ำหนัก' });
+            } else if (bmi > 30) {
+                risks.push({ level: 'high', message: 'อ้วนมาก เสี่ยงโรคเบาหวานและหัวใจ' });
+            } else if (bmi > 25) {
+                risks.push({ level: 'medium', message: 'น้ำหนักเกิน ควรควบคุมอาหาร' });
+            } else {
+                risks.push({ level: 'low', message: 'น้ำหนักอยู่ในเกณฑ์ปกติ' });
+            }
+            
+            if (bloodPressure) {
+                const [systolic, diastolic] = bloodPressure.split('/').map(Number);
+                if (systolic > 140 || diastolic > 90) {
+                    risks.push({ level: 'high', message: 'ความดันโลหิตสูง ควรพบแพทย์' });
+                } else if (systolic > 130 || diastolic > 80) {
+                    risks.push({ level: 'medium', message: 'ความดันโลหิตเริ่มสูง ควรระวัง' });
+                }
+            }
+            
+            if (heartRate) {
+                if (heartRate > 100) {
+                    risks.push({ level: 'medium', message: 'อัตราการเต้นหัวใจเร็วเกินไป' });
+                } else if (heartRate < 60) {
+                    risks.push({ level: 'medium', message: 'อัตราการเต้นหัวใจช้าเกินไป' });
+                }
+            }
+            
+            if (bloodSugar) {
+                if (bloodSugar > 126) {
+                    risks.push({ level: 'high', message: 'ระดับน้ำตาลสูง เสี่ยงเบาหวาน' });
+                } else if (bloodSugar > 100) {
+                    risks.push({ level: 'medium', message: 'ระดับน้ำตาลเริ่มสูง ควรระวัง' });
+                }
+            }
+            
+            return risks;
+        }
+
+        function displayHealthSummary(entry) {
+            const summaryDiv = document.getElementById('healthSummary');
+            
+            summaryDiv.innerHTML = `
+                <div class="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-semibold text-lg mb-3">ข้อมูลสุขภาพล่าสุด</h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-blue-600 font-medium">BMI</div>
+                            <div class="text-xl font-bold">${entry.bmi}</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-red-600 font-medium">ความดัน</div>
+                            <div class="text-lg font-bold">${entry.bloodPressure || 'ไม่ระบุ'}</div>
+                        </div>
+                        ${entry.heartRate ? `
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-green-600 font-medium">อัตราหัวใจ</div>
+                            <div class="text-lg font-bold">${entry.heartRate} bpm</div>
+                        </div>
+                        ` : ''}
+                        ${entry.bloodSugar ? `
+                        <div class="bg-white p-3 rounded-lg">
+                            <div class="text-purple-600 font-medium">น้ำตาล</div>
+                            <div class="text-lg font-bold">${entry.bloodSugar} mg/dL</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <h5 class="font-semibold text-gray-800">การประเมินสุขภาพ:</h5>
+                    ${entry.risks.map(risk => `
+                        <div class="p-3 rounded-lg ${risk.level === 'high' ? 'risk-high text-white' : risk.level === 'medium' ? 'risk-medium text-white' : 'risk-low text-white'}">
+                            <div class="flex items-center">
+                                <span class="mr-2">${risk.level === 'high' ? '⚠️' : risk.level === 'medium' ? '⚡' : '✅'}</span>
+                                <span class="font-medium">${risk.message}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function loadHealthHistory() {
+            const historyDiv = document.getElementById('healthHistory');
+            
+            if (healthHistory.length === 0) {
+                historyDiv.innerHTML = '<div class="text-center text-gray-500 py-8">ยังไม่มีประวัติสุขภาพ</div>';
+                return;
+            }
+            
+            historyDiv.innerHTML = healthHistory.slice(0, 10).map(entry => `
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="bg-red-100 p-2 rounded-lg">❤️</div>
+                            <div>
+                                <div class="font-semibold">${entry.date} ${entry.time}</div>
+                                <div class="text-sm text-gray-600">BMI: ${entry.bmi} | น้ำหนัก: ${entry.weight} กก.</div>
+                            </div>
+                        </div>
+                        <button onclick="deleteHealthEntry(${entry.id})" class="text-red-500 hover:text-red-700 text-sm">
+                            ลบ
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        ${entry.risks.slice(0, 2).map(risk => `
+                            <span class="px-2 py-1 text-xs rounded-full ${
+                                risk.level === 'high' ? 'bg-red-100 text-red-800' : 
+                                risk.level === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                'bg-green-100 text-green-800'
+                            }">
+                                ${risk.level === 'high' ? 'เสี่ยงสูง' : risk.level === 'medium' ? 'เสี่ยงปานกลาง' : 'ปกติ'}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteHealthEntry(id) {
+            healthHistory = healthHistory.filter(entry => entry.id !== id);
+            localStorage.setItem('healthHistory', JSON.stringify(healthHistory));
+            loadHealthHistory();
+        }
+
+        // Appointments functionality
+        document.getElementById('addAppointmentBtn').addEventListener('click', function() {
+            const type = document.getElementById('appointmentType').value;
+            const hospital = document.getElementById('hospital').value.trim();
+            const date = document.getElementById('appointmentDate').value;
+            const time = document.getElementById('appointmentTime').value;
+            const note = document.getElementById('appointmentNote').value.trim();
+            
+            if (!type || !hospital || !date || !time) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            
+            addAppointment(type, hospital, date, time, note);
+        });
+
+        function addAppointment(type, hospital, date, time, note) {
+            const typeNames = {
+                'general': 'ตรวจสุขภาพทั่วไป',
+                'dental': 'ตรวจฟัน',
+                'eye': 'ตรวจตา',
+                'blood': 'ตรวจเลือด',
+                'specialist': 'พบแพทย์เฉพาะทาง'
+            };
+            
+            const appointment = {
+                id: Date.now(),
+                type,
+                typeName: typeNames[type],
+                hospital,
+                date,
+                time,
+                note,
+                status: 'upcoming',
+                createdAt: new Date().toISOString()
+            };
+            
+            appointments.push(appointment);
+            appointments.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+            
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            loadAppointments();
+            
+            // Clear form
+            document.getElementById('appointmentType').value = '';
+            document.getElementById('hospital').value = '';
+            document.getElementById('appointmentDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentTime').value = '';
+            document.getElementById('appointmentNote').value = '';
+            
+            updateNotificationBadge();
+        }
+
+        function loadAppointments() {
+            loadUpcomingAppointments();
+            loadAllAppointments();
+        }
+
+        function loadUpcomingAppointments() {
+            const upcomingDiv = document.getElementById('upcomingAppointments');
+            const now = new Date();
+            const upcoming = appointments.filter(apt => {
+                const aptDate = new Date(apt.date + ' ' + apt.time);
+                return aptDate > now && apt.status === 'upcoming';
+            }).slice(0, 5);
+            
+            if (upcoming.length === 0) {
+                upcomingDiv.innerHTML = '<div class="text-center text-gray-500 py-8">ไม่มีนัดหมายที่จะมาถึง</div>';
+                return;
+            }
+            
+            upcomingDiv.innerHTML = upcoming.map(apt => {
+                const aptDate = new Date(apt.date + ' ' + apt.time);
+                const daysUntil = Math.ceil((aptDate - now) / (1000 * 60 * 60 * 24));
+                
+                return `
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-yellow-100 p-2 rounded-lg">📅</div>
+                                <div>
+                                    <div class="font-semibold text-gray-800">${apt.typeName}</div>
+                                    <div class="text-sm text-gray-600">${apt.hospital}</div>
+                                </div>
+                            </div>
+                            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                                ${daysUntil === 0 ? 'วันนี้' : daysUntil === 1 ? 'พรุ่งนี้' : `อีก ${daysUntil} วัน`}
+                            </span>
+                        </div>
+                        <div class="text-sm text-gray-700 mb-2">
+                            📅 ${new Date(apt.date).toLocaleDateString('th-TH')} เวลา ${apt.time} น.
+                        </div>
+                        ${apt.note ? `<div class="text-sm text-gray-600">📝 ${apt.note}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function loadAllAppointments() {
+            const allDiv = document.getElementById('allAppointments');
+            
+            if (appointments.length === 0) {
+                allDiv.innerHTML = '<div class="text-center text-gray-500 py-8">ยังไม่มีนัดหมาย</div>';
+                return;
+            }
+            
+            allDiv.innerHTML = appointments.map(apt => {
+                const aptDate = new Date(apt.date + ' ' + apt.time);
+                const isPast = aptDate < new Date();
+                
+                return `
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 ${isPast ? 'opacity-60' : ''}">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-indigo-100 p-2 rounded-lg">
+                                    ${apt.type === 'general' ? '🏥' : apt.type === 'dental' ? '🦷' : apt.type === 'eye' ? '👁️' : apt.type === 'blood' ? '🩸' : '👨‍⚕️'}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-800">${apt.typeName}</div>
+                                    <div class="text-sm text-gray-600">${apt.hospital}</div>
+                                    <div class="text-sm text-gray-500">
+                                        📅 ${new Date(apt.date).toLocaleDateString('th-TH')} เวลา ${apt.time} น.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs px-2 py-1 rounded-full ${isPast ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-800'}">
+                                    ${isPast ? 'ผ่านมาแล้ว' : 'กำลังจะมาถึง'}
+                                </span>
+                                <button onclick="deleteAppointment(${apt.id})" class="text-red-500 hover:text-red-700 text-sm">
+                                    ลบ
+                                </button>
+                            </div>
+                        </div>
+                        ${apt.note ? `<div class="text-sm text-gray-600 mt-2">📝 ${apt.note}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteAppointment(id) {
+            appointments = appointments.filter(apt => apt.id !== id);
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            loadAppointments();
+            updateNotificationBadge();
+        }
+
+        function checkUpcomingAppointments() {
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const upcomingSoon = appointments.filter(apt => {
+                const aptDate = new Date(apt.date + ' ' + apt.time);
+                return aptDate >= now && aptDate <= tomorrow && apt.status === 'upcoming';
+            });
+            
+            return upcomingSoon;
+        }
+
+        function updateNotificationBadge() {
+            const upcomingSoon = checkUpcomingAppointments();
+            const badge = document.getElementById('notificationBadge');
+            
+            if (upcomingSoon.length > 0) {
+                badge.textContent = upcomingSoon.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Notification modal
+        document.getElementById('notificationBtn').addEventListener('click', function() {
+            showNotifications();
+        });
+
+        document.getElementById('closeNotificationBtn').addEventListener('click', function() {
+            document.getElementById('notificationModal').classList.add('hidden');
+        });
+
+        function showNotifications() {
+            const modal = document.getElementById('notificationModal');
+            const content = document.getElementById('notificationContent');
+            const upcomingSoon = checkUpcomingAppointments();
+            
+            if (upcomingSoon.length === 0) {
+                content.innerHTML = '<div class="text-center text-gray-500 py-4">ไม่มีการแจ้งเตือน</div>';
+            } else {
+                content.innerHTML = upcomingSoon.map(apt => {
+                    const aptDate = new Date(apt.date + ' ' + apt.time);
+                    const hoursUntil = Math.ceil((aptDate - new Date()) / (1000 * 60 * 60));
+                    
+                    return `
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-yellow-100 p-2 rounded-lg">⏰</div>
+                                <div>
+                                    <div class="font-semibold text-gray-800">${apt.typeName}</div>
+                                    <div class="text-sm text-gray-600">${apt.hospital}</div>
+                                    <div class="text-sm text-yellow-700">
+                                        ${hoursUntil <= 24 ? `อีก ${hoursUntil} ชั่วโมง` : 'พรุ่งนี้'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('notificationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'979b57bc720e45b2',t:'MTc1Njk2NjQyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
